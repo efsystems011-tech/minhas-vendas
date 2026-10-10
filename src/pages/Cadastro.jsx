@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, Form, Button, Alert } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 
 export default function Cadastro() {
     const [nome, setNome] = useState('')
@@ -10,9 +11,13 @@ export default function Cadastro() {
     const [erro, setErro] = useState('')
     const navigate = useNavigate()
 
-    function cadastrar(e) {
+    const [sucesso, setSucesso] = useState('')
+    const [carregando, setCarregando] = useState(false)
+
+    async function cadastrar(e) {
         e.preventDefault()
         setErro('')
+        setSucesso('')
 
         if(senha.length < 6) {
             setErro('A senha precisa ter pelo menos 6 caracteres.')
@@ -24,8 +29,32 @@ export default function Cadastro() {
             return
         }
 
-        console.log({nome, email, senha})
-        navigate('/login')
+        setCarregando(true)
+
+        try {
+            const { error } = await supabase.auth.signUp({
+                email,
+                password: senha,
+                options: { data: { nome } },
+            })
+
+            if (error) {
+                setErro(error.message)
+                return
+            }
+
+            setSucesso('Conta criada! Agora é só entrar.')
+            setTimeout(() => navigate('/login'), 1500)
+        } catch (error) {
+            setErro(
+                error instanceof Error
+                    ? error.message
+                    : 'Não foi possível concluir o cadastro. Tente novamente.'
+            )
+        } finally {
+            setCarregando(false)
+        }
+
     }
 
     return (
@@ -38,6 +67,8 @@ export default function Cadastro() {
                 </div>
 
                 {erro && <Alert variant="danger">{erro}</Alert>}
+
+                {sucesso && <Alert variant="success">{sucesso}</Alert>}
 
                 <Form onSubmit={cadastrar}>
                     <Form.Group className="mb-3">
@@ -86,8 +117,9 @@ export default function Cadastro() {
                     <Button 
                         type="submit"
                         className="w-100 py-2"
+                        disabled={carregando}
                     >
-                        Cadastrar
+                        {carregando ? 'Cadastrando...' : 'Cadastrar'}
                     </Button>
                 </Form>
 

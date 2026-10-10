@@ -1,16 +1,32 @@
 import { useState } from "react";
 import { Card, Form, Button } from 'react-bootstrap'
 import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from "../lib/supabase";
 
 export default function Login() {
     const [email, setEmail] = useState('')
     const [senha, setSenha] = useState('')
     const navigate = useNavigate()
+    const [erro, setErro] = useState('')
+    const [carregando, setCarregando] = useState(false)
     
     
-    function entrar(e) {
+    async function entrar(e) {
         e.preventDefault()
-        console.log({email, senha})
+        setErro('')
+        setCarregando(true)
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password: senha,
+        })
+        
+        setCarregando(false)
+
+        if (error) {
+            setErro('E-mail ou senha incorretos.')
+            return
+        }
 
         navigate('/')
     }
